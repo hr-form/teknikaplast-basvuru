@@ -42,6 +42,22 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   overflow-x: hidden;
+  max-width: 100vw;
+}
+.hero-inner, .hero-stats, .container, .header-inner, .map-table-grid, .info-grid, .job-strip, .form-body {
+  max-width: 100%;
+}
+img, svg, table { max-width: 100%; }
+@media (max-width: 480px) {
+  .hero-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-val { font-size: 22px; }
+  .hero h1 { font-size: 26px; }
+  .form-head { padding: 20px 16px; }
+  .form-body { padding: 20px 14px; }
+  .header-inner { padding: 12px 14px; gap: 10px; }
+  .header-info .pos { font-size: 11px; }
+  .wa-share-bar { padding: 12px 14px; }
+  .btn-submit { padding: 13px 28px; font-size: 14px; }
 }
 
 /* ── LOADING ── */
@@ -531,7 +547,7 @@ input.err, select.err, textarea.err { border-color: var(--error); background: #f
       <div class="hero-tag"><span class="dot"></span>Açık Pozisyon</div>
       <h1>Plastik Üretim<br>Elemanı<br><span>Montaj / Enjeksiyon</span></h1>
       <p class="hero-desc">30 yılı aşkın deneyimiyle Avrupa, Orta Doğu ve Afrika'nın lider ambalaj üreticilerinden Teknika Plast, Muradiye fabrikasında üretim ekibini güçlendiriyor. Deneyimsiz adaylar kabul edilir — işbaşı eğitimi verilir.</p>
-      <a href="#basvuru-formu" class="hero-cta">
+      <a href="#basvuru-formu" class="hero-cta" onclick="event.preventDefault();document.getElementById('basvuru-formu').scrollIntoView({behavior:'smooth'});">
         <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
         Hemen Başvur
       </a>
@@ -708,14 +724,22 @@ input.err, select.err, textarea.err { border-color: var(--error); background: #f
               <input type="text" id="lastName" placeholder="Soyadınız">
               <span class="ferr" id="e-lastName">Bu alan zorunludur.</span>
             </div>
+            <div class="field span2">
+              <label class="lbl" style="display:block;margin-bottom:8px">Cinsiyet <span class="req">*</span></label>
+              <div class="radio-group">
+                <label><input type="radio" name="cinsiyet" value="Kadın"> Kadın</label>
+                <label><input type="radio" name="cinsiyet" value="Erkek"> Erkek</label>
+              </div>
+              <span class="ferr" id="e-cinsiyet">Lütfen seçiniz.</span>
+            </div>
             <div class="field">
               <label class="lbl">Doğum Tarihi <span class="req">*</span></label>
-              <input type="date" id="birthDate">
-              <span class="ferr" id="e-birthDate">Lütfen doldurunuz.</span>
+              <input type="date" id="birthDate" max="">
+              <span class="ferr" id="e-birthDate">18 yaşından büyük olmanız gerekmektedir.</span>
             </div>
             <div class="field">
               <label class="lbl">Telefon <span class="req">*</span></label>
-              <input type="tel" id="phone" placeholder="05XX XXX XX XX">
+              <input type="tel" id="phone" placeholder="05XX XXX XX XX" maxlength="11">
               <span class="ferr" id="e-phone">Geçerli telefon giriniz.</span>
             </div>
             <div class="field">
@@ -898,6 +922,21 @@ input.err, select.err, textarea.err { border-color: var(--error); background: #f
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// Doğum tarihi max değerini ayarla (18 yıl öncesi)
+(function() {
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() - 18);
+  const maxStr = maxDate.toISOString().split('T')[0];
+  const bd = document.getElementById('birthDate');
+  if (bd) bd.max = maxStr;
+})();
+
+// Sayfa açılınca anchor'a atlamayı engelle
+if (window.location.hash === '#basvuru-formu') {
+  history.replaceState(null, '', window.location.pathname);
+  window.scrollTo(0, 0);
+}
+
 // MAP
 const map = L.map('map').setView([38.63, 27.40], 12);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -1071,7 +1110,7 @@ function setRadioErr(name,show){
 document.getElementById('appForm').addEventListener('submit',async function(ev){
   ev.preventDefault(); let ok=true;
   const fields=['firstName','lastName','birthDate','phone','district','neighborhood','education','schoolName','source'];
-  const radios=['marital','hasExp','shiftOk','satOk','sunOk','healthOk'];
+  const radios=['cinsiyet','marital','hasExp','shiftOk','satOk','sunOk','healthOk'];
   fields.forEach(f=>{ const v=gv(f); setErr(f,!v); if(!v)ok=false; });
   radios.forEach(r=>{ const v=gr(r); setRadioErr(r,!v); if(!v)ok=false; });
   // KVKK check
@@ -1081,9 +1120,34 @@ document.getElementById('appForm').addEventListener('submit',async function(ev){
   if(!kvkk.checked){ kvkkErr.classList.add('show'); kvkkBox.classList.add('err-box'); ok=false; }
   else { kvkkErr.classList.remove('show'); kvkkBox.classList.remove('err-box'); }
 
+  // Doğum tarihi — 18 yaş kontrolü
+  const birthVal = gv('birthDate');
+  if (birthVal) {
+    const birthD = new Date(birthVal);
+    const today = new Date();
+    const age = Math.floor((today - birthD) / (365.25 * 24 * 60 * 60 * 1000));
+    if (age < 18) {
+      setErr('birthDate', true);
+      document.getElementById('e-birthDate').textContent = '18 yaşından büyük olmanız gerekmektedir.';
+      ok = false;
+    }
+  }
+
+  // Telefon — Türkiye formatı kontrolü (05XX ile başlamalı, 11 hane)
+  const phoneVal = gv('phone').replace(/[\s\-]/g, '');
+  const phoneOk = /^(05)[0-9]{9}$/.test(phoneVal);
+  if (!phoneOk) {
+    setErr('phone', true);
+    document.getElementById('e-phone').textContent = 'Geçerli telefon giriniz (05XX XXX XX XX)';
+    ok = false;
+  } else {
+    setErr('phone', false);
+  }
+
   if(!ok){ document.querySelector('.ferr.show')?.closest('.field,.form-sec')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
 
   const payload={
+    cinsiyet:gr('cinsiyet'),
     ad:gv('firstName'), soyad:gv('lastName'), dogumTarihi:gv('birthDate'),
     telefon:gv('phone'), ilce:gv('district'), mahalle:gv('neighborhood'),
     medeniDurum:gr('marital'), mezuniyet:gv('education'), okul:gv('schoolName'),
