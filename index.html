@@ -942,6 +942,8 @@ input.err, select.err, textarea.err { border-color: var(--error); background: #f
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+
 // Doğum tarihi max değerini ayarla (18 yıl öncesi)
 (function() {
   const maxDate = new Date();
@@ -958,6 +960,9 @@ if (window.location.hash === '#basvuru-formu') {
 }
 
 // MAP
+if (typeof L === 'undefined') {
+  console.warn('Leaflet not loaded');
+} else {
 const map = L.map('map').setView([38.63, 27.40], 12);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   attribution: '© OpenStreetMap © CARTO',
@@ -1107,6 +1112,8 @@ routes.forEach(route => {
   })}).addTo(map).bindPopup(`<b>⏳ ${p.n}</b><br><small>Yoğun talep halinde servis açılabilir</small>`);
 });
 
+} // end map init
+
 // CONDITIONAL
 document.querySelectorAll('input[name="hasExp"]').forEach(r=>r.addEventListener('change',()=>{
   document.getElementById('expDetail').classList.toggle('show',r.value==='Evet'&&r.checked);
@@ -1217,6 +1224,7 @@ function showSuccess(){
   document.getElementById('success-screen').style.display='block';
   document.getElementById('success-screen').scrollIntoView({behavior:'smooth'});
 }
+}); // DOMContentLoaded
 </script>
 </body>
 </html>
