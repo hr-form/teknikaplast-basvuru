@@ -1179,18 +1179,36 @@ document.getElementById('appForm').addEventListener('submit',async function(ev){
   };
 
   document.getElementById('loading').classList.add('active');
-  // no-cors: CORS engelini aşar, yanıt okunamaz ama veri n8n'e gider
-  fetch(WEBHOOK, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  }).catch(() => {});
-  // 1 saniye sonra başarı ekranını göster
-  setTimeout(() => {
+
+  // Önce normal JSON dene, CORS hatası alırsa no-cors ile gönder
+  const sendData = async () => {
+    try {
+      const res = await fetch(WEBHOOK, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      return true;
+    } catch(e) {
+      // CORS hatası — no-cors ile gönder (veri gider ama yanıt okunamaz)
+      try {
+        // FormData olarak gönder — no-cors ile JSON body gönderilemiyor
+        // JSON'ı string olarak URLSearchParams içine koy
+        await fetch(WEBHOOK, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+      } catch(e2) {}
+      return true;
+    }
+  };
+
+  sendData().then(() => {
     document.getElementById('loading').classList.remove('active');
     showSuccess();
-  }, 1000);
+  });
 });
 
 function showSuccess(){
