@@ -1213,7 +1213,8 @@ document.getElementById('appForm').addEventListener('submit',async function(ev){
         body: JSON.stringify({
           parent: { database_id: NOTION_DB },
           properties: {
-            'Ad Soyad': { title: [{ text: { content: (payload.ad || '') + ' ' + (payload.soyad || '') } }] },
+            'Ad': { title: [{ text: { content: payload.ad || '' } }] },
+            'Soyad': { rich_text: [{ text: { content: payload.soyad || '' } }] },
             'Başvuru Zamanı': { rich_text: [{ text: { content: payload.basvuruZamani || '' } }] },
             'Cinsiyet': { select: { name: payload.cinsiyet || 'Kadın' } },
             'Doğum Tarihi': { rich_text: [{ text: { content: payload.dogumTarihi || '' } }] },
