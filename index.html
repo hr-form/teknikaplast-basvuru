@@ -1187,32 +1187,60 @@ document.getElementById('appForm').addEventListener('submit',async function(ev){
 
   document.getElementById('loading').classList.add('active');
 
-  // Önce normal JSON dene, CORS hatası alırsa no-cors ile gönder
-  const sendData = async () => {
-    try {
-      const res = await fetch(WEBHOOK, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      return true;
-    } catch(e) {
-      // CORS hatası — no-cors ile gönder (veri gider ama yanıt okunamaz)
-      try {
-        // FormData olarak gönder — no-cors ile JSON body gönderilemiyor
-        // JSON'ı string olarak URLSearchParams içine koy
-        await fetch(WEBHOOK, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
-        });
-      } catch(e2) {}
-      return true;
-    }
+  const NOTION_DB = 'fe9a60df3633492d8690f509563e6ede';
+  const NOTION_TOKEN = 'ntn_Y26713373399pNna9E67of12h9sT6GOrteNYlPOcOvNf0h';
+
+  // n8n'e gönder (no-cors)
+  const sendToN8N = () => {
+    fetch(WEBHOOK, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    }).catch(() => {});
   };
 
-  sendData().then(() => {
+  // Notion'a gönder (yedek kayıt)
+  const sendToNotion = async () => {
+    try {
+      await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + NOTION_TOKEN,
+          'Content-Type': 'application/json',
+          'Notion-Version': '2022-06-28'
+        },
+        body: JSON.stringify({
+          parent: { database_id: NOTION_DB },
+          properties: {
+            'Ad Soyad': { title: [{ text: { content: (payload.ad || '') + ' ' + (payload.soyad || '') } }] },
+            'Başvuru Zamanı': { rich_text: [{ text: { content: payload.basvuruZamani || '' } }] },
+            'Cinsiyet': { select: { name: payload.cinsiyet || 'Kadın' } },
+            'Doğum Tarihi': { rich_text: [{ text: { content: payload.dogumTarihi || '' } }] },
+            'Telefon': { phone_number: payload.telefon || '' },
+            'İlçe': { rich_text: [{ text: { content: payload.ilce || '' } }] },
+            'Mahalle': { rich_text: [{ text: { content: payload.mahalle || '' } }] },
+            'Medeni Durum': { select: { name: payload.medeniDurum || 'Bekar' } },
+            'Mezuniyet': { select: { name: payload.mezuniyet || 'Lise' } },
+            'Okul': { rich_text: [{ text: { content: payload.okul || '' } }] },
+            'Üretim Deneyimi': { select: { name: payload.uretimDeneyimi || 'Hayır' } },
+            'Vardiya Uygun': { select: { name: payload.vardiyaUygun || 'Evet' } },
+            'Cumartesi Onayı': { select: { name: payload.cumartesiUygun || 'Evet' } },
+            'Pazar Mesai': { select: { name: payload.pazarMesai || 'Hayır' } },
+            'Sağlık Durumu': { select: { name: payload.saglikDurumu || 'Hayır' } },
+            'İlanı Nereden Duydu': { rich_text: [{ text: { content: payload.ilaniNeredenOgrendin || '' } }] },
+            'Deneyim Detayı': { rich_text: [{ text: { content: payload.deneyimDetay || '' } }] },
+            'Sağlık Detayı': { rich_text: [{ text: { content: payload.saglikDetay || '' } }] },
+            'Ek Bilgi': { rich_text: [{ text: { content: payload.ekBilgi || '' } }] }
+          }
+        })
+      });
+    } catch(e) {}
+  };
+
+  // İkisine paralel gönder
+  sendToN8N();
+  sendToNotion().then(() => {
     document.getElementById('loading').classList.remove('active');
     showSuccess();
   });
