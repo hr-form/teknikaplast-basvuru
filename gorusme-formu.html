@@ -440,7 +440,10 @@
     <div class="section-label">👤 Bilgileriniz</div>
     <div class="input-group">
       <input type="text" id="name" placeholder="Adınız ve Soyadınız" autocomplete="name" />
-      <input type="tel" id="phone" placeholder="Telefon Numaranız (05XX...)" autocomplete="tel" inputmode="numeric" />
+      <input type="tel" id="phone" placeholder="05XX XXX XX XX" autocomplete="tel" inputmode="numeric" />
+      <div id="phoneHint" style="font-size:12px; color:#dc2626; font-weight:600; margin-top:4px; display:none;">
+        ⚠️ Lütfen geçerli bir telefon numarası girin (05XX ile başlayan 11 haneli)
+      </div>
     </div>
 
     <div class="section-label" style="margin-top:22px;">📅 Görüşme Günü</div>
@@ -569,11 +572,30 @@
     checkForm();
   }
 
+  function telefonGecerli(tel) {
+    const temiz = tel.replace(/\s/g, '').replace(/-/g, '');
+    // Türk telefon formatı: 05XX XXX XX XX (11 hane, 0 ile başlar)
+    return /^05[0-9]{9}$/.test(temiz);
+  }
+
   function checkForm() {
     const name = document.getElementById('name').value.trim();
     const phone = document.getElementById('phone').value.trim();
     const btn = document.getElementById('submitBtn');
-    btn.disabled = !(name.length > 2 && phone.length >= 10 && selectedSlot);
+    const phoneInput = document.getElementById('phone');
+    
+    const hint = document.getElementById('phoneHint');
+    if (phone.length > 3 && !telefonGecerli(phone)) {
+      phoneInput.style.borderColor = '#dc2626';
+      phoneInput.style.background = '#fff5f5';
+      hint.style.display = 'block';
+    } else {
+      phoneInput.style.borderColor = '';
+      phoneInput.style.background = '';
+      hint.style.display = 'none';
+    }
+    
+    btn.disabled = !(name.length > 2 && telefonGecerli(phone) && selectedSlot);
   }
 
   document.getElementById('name').addEventListener('input', checkForm);
@@ -605,6 +627,7 @@
     try {
       // N8N WEBHOOK URL — aşağıdaki URL'yi kendi n8n webhook'unuzla değiştirin
       const WEBHOOK_URL = 'https://n8n.arcloom.io/webhook/gorusme-randevu';
+      console.log('Webhook gonderiliyor:', JSON.stringify(payload));
 
       await fetch(WEBHOOK_URL, {
         method: 'POST',
