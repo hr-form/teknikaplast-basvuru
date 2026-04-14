@@ -629,10 +629,16 @@
       const WEBHOOK_URL = 'https://n8n.arcloom.io/webhook/gorusme-randevu';
       console.log('Webhook gonderiliyor:', JSON.stringify(payload));
 
-      await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const params = new URLSearchParams({
+        isim: payload.isim,
+        telefon: payload.telefon,
+        tarih: payload.tarih,
+        saat: payload.saat,
+        gonderim_zamani: payload.gonderim_zamani
+      });
+      await fetch(WEBHOOK_URL + '?' + params.toString(), {
+        method: 'GET',
+        mode: 'no-cors'
       });
     } catch(e) {
       // no-cors modunda hata görünmez, devam et
